@@ -109,6 +109,8 @@ func handleAddCallback(ctx *ext.Context, update *ext.Update) error {
 		shortcut.CreateAndAddYtdlpTaskWithEdit(ctx, selectedStorage, dirPath, data.YtdlpURLs, data.YtdlpFlags, msgID, userID)
 	case tasktype.TaskTypeTransfer:
 		return handleTransferCallback(ctx, userID, selectedStorage, dirPath, data, msgID)
+	case tasktype.TaskTypeBulkdl:
+		return shortcut.CreateAndAddBulkDLTaskWithEdit(ctx, userID, selectedStorage, dirPath, data.BulkChatID, data.BulkChatLabel, data.BulkMediaTypes, data.BulkMaxMessages, msgID)
 	default:
 		return fmt.Errorf("unexcept task type: %s", data.TaskType)
 	}

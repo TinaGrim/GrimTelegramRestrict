@@ -59,6 +59,11 @@ func BuildAddSelectStorageKeyboard(stors []storage.Storage, adddata tcbdata.Add)
 			TransferSourceStorName: adddata.TransferSourceStorName,
 			TransferSourcePath:     adddata.TransferSourcePath,
 			TransferFiles:          adddata.TransferFiles,
+
+			BulkChatID:      adddata.BulkChatID,
+			BulkChatLabel:   adddata.BulkChatLabel,
+			BulkMediaTypes:  adddata.BulkMediaTypes,
+			BulkMaxMessages: adddata.BulkMaxMessages,
 		}
 		dataid := xid.New().String()
 		err := cache.Set(dataid, data)

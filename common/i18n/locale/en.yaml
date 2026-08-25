@@ -36,6 +36,7 @@ bot:
       /fnametmpl - Set custom filename template
       /parser - Manage parser plugins
       /task - Manage task queue
+      /bulkdl - Bulk download media from a channel (UserBot)
       /watch - Watch chats and auto save (UserBot)
       /unwatch - Stop watching chats (UserBot)
       /lswatch - List watched chats (UserBot)
@@ -55,6 +56,7 @@ bot:
       ytdlp: "Download video/audio using yt-dlp"
       import: "Import files from storage to Telegram"
       transfer: "Transfer files between storages"
+      bulkdl: "Bulk download media from a channel (UserBot)"
       task: "Manage task queue"
       cancel: "Cancel task"
       watch: "Watch chats (UserBot)"
@@ -338,6 +340,29 @@ bot:
       start_stats: "Total files: {{.Count}}\nTotal size: {{.SizeMB}} MB"
       info_files_select_storage: "Total {{.Count}} files ({{.SizeMB}} MB), please select target storage"
       error_build_storage_select_keyboard_failed: "Failed to build storage selection keyboard: {{.Error}}"
+    bulkdl:
+      usage: |-
+        Usage: /bulkdl <channel_id_or_username> [media_types] [max_files]
+        Download all media from a channel's history (requires UserBot).
+        Progress is saved per channel; run again to resume where it stopped.
+        /bulkdl reset <channel_id_or_username> - clear saved progress
+        media_types is a comma-separated list from:
+          photo, video, video_note, audio, voice, document
+        or "all" (default). A bare number is treated as max_files
+        and includes all types.
+        Examples:
+        /bulkdl @some_channel
+        /bulkdl -1001234567890 100
+        /bulkdl -1001234567890 photo,video 100
+      error_userbot_not_enabled: "This feature requires the UserBot to be enabled and logged in"
+      error_chat_unreachable: "Cannot access {{.Chat}} with the UserBot account.\nMake sure the ID is correct and that account is a member of the channel.\nDetails: {{.Error}}"
+      error_invalid_media_types: "Invalid media types: {{.Types}}\nSupported: {{.Available}}"
+      info_max_files: "Max files: {{.Count}}"
+      info_select_storage: "Bulk download from {{.Chat}}\nMedia types: {{.Types}}\n{{.Limit}}Please select storage"
+      prompt_select_types: "Bulk download from {{.Chat}}\nStep 1/3 - Select media types to download"
+      prompt_select_max_files: "Media types: {{.Types}}\nStep 2/3 - Select the max number of files to download (∞ = no limit)"
+      info_reset_done: "Checkpoint cleared for {{.Chat}}; the next bulk download starts from the beginning"
+      error_reset_failed: "Failed to clear checkpoint: {{.Error}}"
     cancel:
       usage: "Usage: /cancel <task_id>"
       error_cancel_failed: "Failed to cancel task: {{.Error}}"
@@ -408,6 +433,14 @@ bot:
       ytdlp_start: "Starting yt-dlp download ({{.Count}} links)..."
       ytdlp_downloading: "yt-dlp downloading ({{.Count}} links)\n"
       ytdlp_done: "yt-dlp download completed and transferred ({{.Count}} files)\n"
+      bulkdl_start: "<b>Starting bulk download from {{.Chat}}</b>\nSave path: <code>{{.Dest}}</code>{{if .Resume}}\nResuming from message ID {{.Resume}}{{end}}"
+      bulkdl_running: "<b>Bulk downloading from {{.Chat}}</b>\nScanned: <code>{{.Scanned}}</code> | Saved: <code>{{.Saved}}</code> | Skipped: <code>{{.Skipped}}</code> | Failed: <code>{{.Failed}}</code>{{if .Current}}\nCurrent: <code>{{.Current}}</code>{{end}}{{range .Recent}}\n{{.}}{{end}}"
+      bulkdl_done: "<b>Bulk download completed</b>\nScanned: <code>{{.Scanned}}</code> | Saved: <code>{{.Saved}}</code>\nSkipped: <code>{{.Skipped}}</code> | Failed: <code>{{.Failed}}</code>\nSave path: <code>{{.Dest}}</code>"
+      bulkdl_done_up_to_date: |-
+        <b>No messages found above the saved checkpoint (message ID {{.Resume}})</b>
+        Either everything was already downloaded, or the checkpoint was written by the buggy older version.
+        To rescan the entire history:
+        /bulkdl reset {{.Chat}}
       downloaded_prefix: "\nDownloaded: "
       current_speed_prefix: "\nCurrent speed: "
       transfer_start_prefix: "Transfering: "
@@ -428,6 +461,36 @@ bot:
       start: "Starting to sync peers..."
       success: "Peer sync completed, total {{.Count}} chats synced"
       failed: "Peer sync failed: {{.Error}}"
+    wiz:
+      help_pick_feature: "Pick a feature to get started — I will guide you step by step:"
+      button_dl: "📥 Download links"
+      button_ytdlp: "🎬 yt-dlp"
+      button_aria2: "📡 Aria2"
+      button_bulkdl: "📦 Bulk channel"
+      button_watch: "👀 Watch chat"
+      prompt_dl: |-
+        Step 1/2 — Download links
+        Send me one or more download links in a single message.
+        (Send /help to cancel and restart)
+      prompt_ytdlp: |-
+        Step 1/2 — yt-dlp
+        Send me the video/audio URL(s) in a single message.
+        (Send /help to cancel and restart)
+      prompt_aria2: |-
+        Step 1/2 — Aria2 download
+        Send me the URL(s) to download via Aria2 in a single message.
+        (Send /help to cancel and restart)
+      prompt_bulkdl: |-
+        Bulk channel download — Step 1/3
+        Send me the channel ID or @username.
+        Optionally append media types and a max file count, e.g.:
+        -1001234567890 photo,video 100
+        (Send /help to cancel and restart)
+      prompt_watch: |-
+        Watch chat — Step 1/1
+        Send me the chat ID or @username, optionally followed by a filter:
+        -1002229835658 msgre:.*keyword.*
+        (Send /help to cancel and restart)
     aria2:
       error_aria2_not_enabled: "Aria2 feature is not enabled in the configuration"
       error_aria2_client_init_failed: "Aria2 client initialization failed: {{.Error}}"

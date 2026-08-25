@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
+	userclient "github.com/krau/SaveAny-Bot/client/user"
 	"github.com/krau/SaveAny-Bot/config"
 	"github.com/krau/SaveAny-Bot/core"
 	"github.com/krau/SaveAny-Bot/core/tasks/aria2dl"
 	"github.com/krau/SaveAny-Bot/core/tasks/batchtfile"
+	"github.com/krau/SaveAny-Bot/core/tasks/bulkdl"
 	"github.com/krau/SaveAny-Bot/core/tasks/directlinks"
 	"github.com/krau/SaveAny-Bot/core/tasks/parsed"
 	tphtask "github.com/krau/SaveAny-Bot/core/tasks/telegraph"
@@ -62,6 +65,8 @@ func (f *TaskFactory) CreateTask(req *CreateTaskRequest) (*CreateTaskResponse, e
 		return f.createTPHPicsTask(taskID, createdAt, req, stor)
 	case tasktype.TaskTypeTransfer:
 		return f.createTransferTask(taskID, createdAt, req)
+	case tasktype.TaskTypeBulkdl:
+		return f.createBulkDLTask(taskID, createdAt, req, stor)
 	default:
 		return nil, fmt.Errorf("unsupported task type: %s", req.Type)
 	}
@@ -314,6 +319,44 @@ func (f *TaskFactory) createTPHPicsTask(taskID string, createdAt time.Time, req 
 	return &CreateTaskResponse{
 		TaskID:    taskID,
 		Type:      tasktype.TaskTypeTphpics,
+		Status:    TaskStatusQueued,
+		CreatedAt: createdAt,
+	}, nil
+}
+
+// createBulkDLTask 创建频道批量下载任务
+func (f *TaskFactory) createBulkDLTask(taskID string, createdAt time.Time, req *CreateTaskRequest, stor storage.Storage) (*CreateTaskResponse, error) {
+	var params BulkDLParams
+	if err := json.Unmarshal(req.Params, &params); err != nil {
+		return nil, fmt.Errorf("invalid params: %w", err)
+	}
+
+	uctx := userclient.GetCtx()
+	if !config.C().Telegram.Userbot.Enable || uctx == nil {
+		return nil, fmt.Errorf("bulkdl requires the userbot to be enabled and logged in")
+	}
+
+	types, err := bulkdl.ParseMediaTypes(strings.Join(params.MediaTypes, ","))
+	if err != nil {
+		return nil, fmt.Errorf("invalid media types: %w", err)
+	}
+
+	task := bulkdl.NewTask(taskID, f.ctx, uctx, bulkdl.Params{
+		UserID:      0,
+		ChatID:      params.ChatID,
+		ChatLabel:   fmt.Sprintf("%d", params.ChatID),
+		Types:       types,
+		MaxMessages: params.MaxMessages,
+	}, stor, req.Path, nil)
+
+	err = f.registerAndEnqueueTask(task, tasktype.TaskTypeBulkdl, req.Storage, req.Path, req.Webhook)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CreateTaskResponse{
+		TaskID:    taskID,
+		Type:      tasktype.TaskTypeBulkdl,
 		Status:    TaskStatusQueued,
 		CreatedAt: createdAt,
 	}, nil

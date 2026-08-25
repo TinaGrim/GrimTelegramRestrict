@@ -14,6 +14,8 @@ const (
 	TypeSetDefault = "setdefault"
 	TypeConfig     = "config"
 	TypeCancel     = "cancel"
+	TypeBulkDL     = "bulkdl"
+	TypeFeature    = "feat"
 )
 
 const (
@@ -78,6 +80,11 @@ type Add struct {
 	TransferSourceStorName string
 	TransferSourcePath     string
 	TransferFiles          []string // file paths relative to source storage
+	// bulkdl
+	BulkChatID      int64  // resolved Telegram peer ID of the source channel
+	BulkChatLabel   string // display label (username or raw arg)
+	BulkMediaTypes  string // comma-separated media types or "all"
+	BulkMaxMessages int    // cap for files downloaded in one run (0 = unlimited)
 }
 
 type SetDefaultStorage struct {

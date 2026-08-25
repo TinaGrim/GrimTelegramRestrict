@@ -63,6 +63,14 @@ func GetAria2Client() *aria2.Client {
 	return aria2Client
 }
 
+// GetOrCreateAria2Client initializes the shared client on first use.
+func GetOrCreateAria2Client() (*aria2.Client, error) {
+	aria2ClientInitOnce.Do(func() {
+		aria2Client, aria2ClientInitErr = aria2.NewClient(config.C().Aria2.Url, config.C().Aria2.Secret)
+	})
+	return aria2Client, aria2ClientInitErr
+}
+
 func handleAria2DlCmd(ctx *ext.Context, update *ext.Update) error {
 	if !config.C().Aria2.Enable {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgAria2ErrorAria2NotEnabled)), nil)

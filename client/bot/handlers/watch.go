@@ -29,12 +29,19 @@ import (
 )
 
 func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
-	logger := log.FromContext(ctx)
 	args := strings.Split(update.EffectiveMessage.Text, " ")
 	if len(args) < 2 {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchHelpText)), nil)
 		return dispatcher.EndGroups
 	}
+	return startWatching(ctx, update, strings.Join(args[1:], " "))
+}
+
+// startWatching watches a chat from a single "<chat_id_or_username> [filter]"
+// string; shared by /watch and the step-by-step wizard.
+func startWatching(ctx *ext.Context, update *ext.Update, argsText string) error {
+	logger := log.FromContext(ctx)
+	args := strings.Fields(argsText)
 	userChatID := update.GetUserChat().GetID()
 	user, err := database.GetUserByChatID(ctx, userChatID)
 	if err != nil {
@@ -46,7 +53,11 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorDefaultStorageNotSet)), nil)
 		return dispatcher.EndGroups
 	}
-	chatArg := args[1]
+	if len(args) < 1 {
+		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgWatchHelpText)), nil)
+		return dispatcher.EndGroups
+	}
+	chatArg := args[0]
 	chatID, err := tgutil.ParseChatID(ctx, chatArg)
 	if err != nil {
 		ctx.Reply(update, ext.ReplyTextString(i18n.T(i18nk.BotMsgCommonErrorInvalidIdOrUsername, map[string]any{"Error": err.Error()})), nil)
@@ -62,8 +73,8 @@ func handleWatchCmd(ctx *ext.Context, update *ext.Update) error {
 		return dispatcher.EndGroups
 	}
 	filter := ""
-	if len(args) > 2 {
-		filterArg := strings.Join(args[2:], " ")
+	if len(args) > 1 {
+		filterArg := strings.Join(args[1:], " ")
 		filterType, _, _ := strings.Cut(filterArg, ":")
 		filterData := strings.Split(filterArg, ":")[1]
 		if filterType == "" || filterData == "" {

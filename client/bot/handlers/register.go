@@ -32,6 +32,7 @@ var CommandHandlers = []DescCommandHandler{
 	{"aria2dl", i18nk.BotMsgCmdAria2dl, handleAria2DlCmd},
 	{"ytdlp", i18nk.BotMsgCmdYtdlp, handleYtdlpCmd},
 	{"transfer", i18nk.BotMsgCmdTransfer, handleTransferCmd},
+	{"bulkdl", i18nk.BotMsgCmdBulkdl, handleBulkDlCmd},
 	{"task", i18nk.BotMsgCmdTask, handleTaskCmd},
 	{"cancel", i18nk.BotMsgCmdCancel, handleCancelCmd},
 	{"config", i18nk.BotMsgCmdConfig, handleConfigCmd},
@@ -53,14 +54,19 @@ func Register(disp dispatcher.Dispatcher) {
 		return dispatcher.EndGroups
 	}))
 	disp.AddHandler(handlers.NewMessage(filters.Message.All, checkPermission))
+	// Wizard input capture must run before any other text handler so it can
+	// claim plain-text replies while a step-by-step flow is active.
+	disp.AddHandler(handlers.NewMessage(filters.Message.Text, handleWizardInput))
 	for _, info := range CommandHandlers {
 		disp.AddHandler(handlers.NewCommand(info.Cmd, info.handler))
 	}
+	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeFeature), withPermission(handleFeatureButton)))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("update"), withPermission(handleUpdateCallback)))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeAdd), withPermission(handleAddCallback)))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeSetDefault), withPermission(handleSetDefaultCallback)))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeCancel), withPermission(handleCancelCallback)))
 	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeConfig), withPermission(handleConfigCallback)))
+	disp.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix(tcbdata.TypeBulkDL), withPermission(handleBulkDLCallback)))
 	disp.AddHandler(handlers.NewMessage(sabotfilters.RegexUrl(regexp.MustCompile(re.TgMessageLinkRegexString)), handleSilentMode(handleMessageLink, handleSilentSaveLink)))
 	disp.AddHandler(handlers.NewMessage(sabotfilters.RegexUrl(regexp.MustCompile(re.TelegraphUrlRegexString)), handleSilentMode(handleTelegraphUrlMessage, handleSilentSaveTelegraph)))
 	disp.AddHandler(handlers.NewMessage(filters.Message.Media, handleSilentMode(handleMediaMessage, handleSilentSaveMedia)))

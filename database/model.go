@@ -41,3 +41,17 @@ type Rule struct {
 	StorageName string
 	DirPath     string
 }
+
+// BulkDLProgress stores the resume state of a bulk channel media download
+// (mirrors telegram_media_downloader's per-chat last_read_message_id).
+type BulkDLProgress struct {
+	gorm.Model
+	UserID uint  `gorm:"uniqueIndex:idx_bulkdl_user_chat"`
+	ChatID int64 `gorm:"uniqueIndex:idx_bulkdl_user_chat"`
+	// LastReadMessageID is the ID of the last message scanned for this chat;
+	// the next run resumes from messages with greater IDs.
+	LastReadMessageID int
+	// FailedIDs holds comma-separated message IDs whose downloads failed and
+	// will be retried on the next run.
+	FailedIDs string
+}

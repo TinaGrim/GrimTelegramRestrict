@@ -54,3 +54,8 @@ func Get[T any](key string) (T, bool) {
 	}
 	return vT, true
 }
+
+// Delete removes a key from the cache.
+func Delete(key string) {
+	cache.Del(key)
+}

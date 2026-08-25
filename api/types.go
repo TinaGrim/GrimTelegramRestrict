@@ -161,3 +161,10 @@ type TGFilesParams struct {
 type TPHPicsParams struct {
 	TelegraphURL string `json:"telegraph_url"`
 }
+
+// BulkDLParams bulkdl 任务参数
+type BulkDLParams struct {
+	ChatID      int64    `json:"chat_id"`
+	MediaTypes  []string `json:"media_types,omitempty"`
+	MaxMessages int      `json:"max_messages,omitempty"`
+}

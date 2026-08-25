@@ -26,6 +26,7 @@ import (
 	"github.com/krau/SaveAny-Bot/database"
 	"github.com/krau/SaveAny-Bot/pkg/telegraph"
 	"github.com/krau/SaveAny-Bot/pkg/tfile"
+	"github.com/rs/xid"
 )
 
 // 获取消息中的文件并回复等待消息, 返回等待消息, 获取到的文件
@@ -159,6 +160,8 @@ func GetFilesFromUpdateLinkMessageWithReplyEdit(ctx *ext.Context, update *ext.Up
 	return replied, files, editReplied, nil
 }
 
+// GetCallbackDataWithAnswer fetches the cached callback data, answering the
+// query with an expiry alert when the data has expired.
 func GetCallbackDataWithAnswer[DataType any](ctx *ext.Context, update *ext.Update, dataid string) (DataType, error) {
 	data, ok := cache.Get[DataType](dataid)
 	if !ok {
@@ -169,6 +172,15 @@ func GetCallbackDataWithAnswer[DataType any](ctx *ext.Context, update *ext.Updat
 		return zero, dispatcher.EndGroups
 	}
 	return data, nil
+}
+
+// SetCallbackData stores callback payload under a fresh data ID.
+func SetCallbackData[DataType any](data DataType) (string, error) {
+	dataid := xid.New().String()
+	if err := cache.Set(dataid, data); err != nil {
+		return "", fmt.Errorf("failed to cache callback data: %w", err)
+	}
+	return dataid, nil
 }
 
 type TelegraphResult struct {
